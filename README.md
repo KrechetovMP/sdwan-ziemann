@@ -1,4 +1,4 @@
-# Reference Configuration for Fortinet SD-wAN/ADVPN
+# Reference Configuration for Fortinet SD-WAN/ADVPN
 
 This repository contains configuration examples and templates that can be used to generate
 our best-practice configuration for your SD-WAN projects!
