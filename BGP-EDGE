@@ -1,0 +1,111 @@
+config router bgp
+  set as 65101
+  set router-id 10.254.254.{{branch_id}}
+  set keepalive-timer 5
+  set holdtime-timer 15
+  set ibgp-multipath enable
+  set additional-path enable
+  set additional-path-select 255
+  set graceful-restart enable
+  set recursive-next-hop enable
+  config neighbor
+  edit 10.254.100.1
+      set soft-reconfiguration enable
+      set advertisement-interval 1
+      set link-down-failover enable
+      set interface "HUB1-1"
+      set connect-timer 1
+      set remote-as 65101
+      set additional-path receive
+    next
+      edit 10.254.104.1
+      set soft-reconfiguration enable
+      set advertisement-interval 1
+      set link-down-failover enable
+      set interface "HUB2-1"
+      set connect-timer 1
+      set remote-as 65101
+      set additional-path receive
+    next
+      edit "10.254.108.1"
+      set advertisement-interval 1
+      set link-down-failover enable
+      set soft-reconfiguration enable
+      set interface "HUB1-2"
+      set remote-as 65101
+      set connect-timer 1
+      set additional-path receive
+        next
+        edit "10.254.112.1"
+      set advertisement-interval 1
+      set link-down-failover enable
+      set soft-reconfiguration enable
+      set interface "HUB2-2"
+      set remote-as 65101
+      set connect-timer 1
+      set additional-path receive
+        next
+    end
+      config network
+    edit 1
+      set prefix {{ lan_summary }}
+    next
+  end
+  end
+config router prefix-list
+    edit "EDGE_PREFIX"
+        config rule
+            edit 1
+                set prefix lan summary
+                unset ge
+                unset le
+            next
+        end
+    next
+end
+    config router route-map
+        edit MAIN
+            config rule
+                edit 1
+                    set match-ip-address "EDGE_PREFIX"
+                    set set-community “65101:1“
+                next
+            end
+        next
+        edit “BACKUP“
+            config rule
+                edit 1
+                    set match-ip-address "EDGE_PREFIX"
+                    set set-community “65101:2“
+                next
+            end
+        next
+        edit “Out-of-SLA“
+            config rule
+                edit 1
+                    set match-ip-address "EDGE_PREFIX"
+                    set set-community “65101:999“
+                next
+            end
+        next
+    end
+config router bgp
+    config neighbor
+        edit "10.254.100.1"
+            set route-map-out "Out-of-SLA"
+            set route-map-out-preferable "BACKUP"
+        next
+        edit "10.254.104.1"
+            set route-map-out "Out-of-SLA"
+            set route-map-out-preferable "BACKUP"
+        next
+        edit "10.254.108.1"
+            set route-map-out "Out-of-SLA"
+            set route-map-out-preferable "MAIN"
+        next
+        edit "10.254.112.1"
+            set route-map-out "Out-of-SLA"
+            set route-map-out-preferable "MAIN"
+        next
+    end
+end
