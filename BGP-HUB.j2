@@ -22,26 +22,32 @@ config router bgp
   end
   config neighbor-range
     edit 1
-      set prefix 10.254.100.0/22
+      set prefix 10.254.100.0 255.255.252.0
       set neighbor-group "EDGE"
     next
-      edit 2
-      set prefix 10.254.104.0/22
+    edit 2
+      set prefix 10.254.104.0 255.255.252.0
+      set neighbor-group "EDGE"
+    next
+    edit 3
+      set prefix 10.254.108.0 255.255.252.0
+      set neighbor-group "EDGE"
+    next
+    edit 4
+      set prefix 10.254.112.0 255.255.252.0
       set neighbor-group "EDGE"
     next
   end
   config network
-    edit 1
-      set prefix {{ lan_summary }}
-    next
+    {% set networks = lan_summary.split(',') %}
+    {% for SN in networks %}
+      {% set net = SN.strip() %}
+        edit 0
+          set prefix {{ net }}
+        next
+    {% endfor %}
   end
-end
 config router static
-  edit 101
-    set dst {{ lan_summary }}
-    set blackhole enable
-    set comment "Avoid potential leak of corporate traffic to underlay"
-  next
   edit 102
     set dst 10.254.100.0/20
     set blackhole enable
@@ -51,15 +57,16 @@ end
 config router prefix-list
     edit "RZFGT-NET"
         config rule
-            edit 1
-                set prefix 10.88.0.0 255.255.0.0
-                set ge 24
-                unset le
-            next
-            edit 2
-                set prefix 10.254.254.1 255.255.255.255
-                unset ge
-                unset le
+              config network
+              {% set networks = lan_summary.split(',') %}
+                {% for SN in networks %}
+                  {% set net = SN.strip() %}
+                      edit 0
+                        set prefix {{ net }}
+                        unset ge
+                        unset le
+                      next
+                {% endfor %}
             next
         end
     next
